@@ -10,6 +10,7 @@ import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
 import { Toaster as SonnerToaster } from "sonner";
 import { Toaster } from "@/components/ui/toaster";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
@@ -25,6 +26,15 @@ const Index = () => {
       <Footer />
       <SonnerToaster position="top-right" closeButton richColors />
       <Toaster />
+      
+      <div className="fixed bottom-6 right-6 z-50">
+        <Link 
+          to="/dark-theme" 
+          className="bg-gray-900 text-white px-4 py-2 rounded-full shadow-lg hover:bg-gray-800 transition-colors flex items-center"
+        >
+          Try Dark Theme
+        </Link>
+      </div>
     </div>
   );
 };
