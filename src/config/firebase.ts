@@ -1,7 +1,7 @@
 
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getStorage, connectStorageEmulator } from "firebase/storage";
 
 // Firebase configuration using your project's credentials
 const firebaseConfig = {
@@ -15,7 +15,16 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+// Initialize Firestore with settings
 const db = getFirestore(app);
+
+// Initialize Storage
 const storage = getStorage(app);
 
-export { db, storage };
+// Check if running in development mode to prevent unnecessary console logs in production
+if (import.meta.env.DEV) {
+  console.log("Firebase initialized with project:", firebaseConfig.projectId);
+}
+
+export { app, db, storage };

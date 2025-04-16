@@ -8,6 +8,8 @@ import ProjectsSection from "@/components/ProjectsSection";
 import CertificatesSection from "@/components/CertificatesSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
+import { Toaster as SonnerToaster } from "sonner";
+import { Toaster } from "@/components/ui/toaster";
 
 const Index = () => {
   return (
@@ -21,6 +23,8 @@ const Index = () => {
       <CertificatesSection />
       <ContactSection />
       <Footer />
+      <SonnerToaster position="top-right" closeButton />
+      <Toaster />
     </div>
   );
 };

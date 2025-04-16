@@ -7,7 +7,8 @@ import {
   updateDoc, 
   addDoc,
   serverTimestamp,
-  DocumentData
+  DocumentData,
+  Timestamp
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 
@@ -70,6 +71,14 @@ export interface CocurricularItem {
   id: string;
   activity: string;
   date: string;
+}
+
+export interface ContactMessage {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  createdAt?: Timestamp;
 }
 
 // Function to get all personal information
@@ -207,32 +216,46 @@ export const getCocurricular = async (): Promise<CocurricularItem[]> => {
   }
 };
 
-// Function to add a contact message
-export const addContactMessage = async (message: {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-}): Promise<string | null> => {
+// Function to add a contact message with enhanced error handling
+export const addContactMessage = async (message: ContactMessage): Promise<string | null> => {
   try {
+    console.log("Sending message data:", message);
+    
     const contactCollection = collection(db, "contactMessages");
     
-    // Add timestamp to the message data
     const messageWithTimestamp = {
       ...message,
       createdAt: serverTimestamp()
     };
     
-    // Add the document to Firestore
+    console.log("Adding document to Firestore...");
     const docRef = await addDoc(contactCollection, messageWithTimestamp);
+    
     console.log("Message sent successfully with ID:", docRef.id);
     return docRef.id;
   } catch (error) {
-    console.error("Error adding contact message:", error);
-    // Return more specific error information if possible
+    console.error("Error adding contact message:");
+    
     if (error instanceof Error) {
-      console.error("Error details:", error.message);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    } else {
+      console.error("Unknown error type:", error);
     }
+    
     return null;
+  }
+};
+
+// Function to test Firestore connection
+export const testFirestoreConnection = async (): Promise<boolean> => {
+  try {
+    const testDocRef = doc(db, "test", "connection");
+    await getDoc(testDocRef);
+    console.log("Firestore connection successful");
+    return true;
+  } catch (error) {
+    console.error("Firestore connection test failed:", error);
+    return false;
   }
 };

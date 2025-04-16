@@ -1,18 +1,19 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaPaperPlane } from 'react-icons/fa';
-import { addContactMessage } from '@/services/resumeService';
+import { addContactMessage, testFirestoreConnection, ContactMessage } from '@/services/resumeService';
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
 
 const ContactSection = () => {
-  const { toast } = useToast();
-  const [formData, setFormData] = useState({
+  const { toast: shadowToast } = useToast();
+  const [formData, setFormData] = useState<ContactMessage>({
     name: '',
     email: '',
     subject: '',
@@ -20,6 +21,18 @@ const ContactSection = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<null | { text: string; isError: boolean }>(null);
+  const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null);
+
+  // Test Firebase connection on component mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      const isConnected = await testFirestoreConnection();
+      setConnectionStatus(isConnected);
+      console.log("Firebase connection status:", isConnected ? "Connected" : "Not connected");
+    };
+    
+    checkConnection();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -36,7 +49,14 @@ const ContactSection = () => {
     
     try {
       console.log("Submitting form data:", formData);
+      
+      // Show a loading toast
+      const loadingToast = toast.loading("Sending your message...");
+      
       const messageId = await addContactMessage(formData);
+      
+      // Dismiss the loading toast
+      toast.dismiss(loadingToast);
       
       if (messageId) {
         setSubmitMessage({ 
@@ -44,7 +64,9 @@ const ContactSection = () => {
           isError: false 
         });
         
-        toast({
+        // Show success toast
+        toast.success("Message sent successfully!");
+        shadowToast({
           title: "Message sent",
           description: "Your message has been sent successfully!",
           duration: 5000,
@@ -58,17 +80,25 @@ const ContactSection = () => {
           message: ''
         });
       } else {
-        throw new Error("Failed to send message");
+        throw new Error("Failed to send message - no message ID returned");
       }
     } catch (error) {
       console.error("Error submitting form:", error);
       
+      let errorMessage = "There was an error sending your message. Please try again later.";
+      if (error instanceof Error) {
+        errorMessage = `Error: ${error.message}`;
+        console.error("Error details:", error.stack);
+      }
+      
       setSubmitMessage({
-        text: "There was an error sending your message. Please try again later.",
+        text: errorMessage,
         isError: true
       });
       
-      toast({
+      // Show error toast
+      toast.error("Failed to send message");
+      shadowToast({
         title: "Error",
         description: "Failed to send your message. Please try again.",
         variant: "destructive",
@@ -76,13 +106,6 @@ const ContactSection = () => {
       });
     } finally {
       setIsSubmitting(false);
-      
-      // Clear message after 5 seconds
-      if (submitMessage) {
-        setTimeout(() => {
-          setSubmitMessage(null);
-        }, 5000);
-      }
     }
   };
 
@@ -104,6 +127,14 @@ const ContactSection = () => {
         </motion.div>
 
         <div className="max-w-4xl mx-auto">
+          {connectionStatus === false && (
+            <Alert className="mb-6 border-amber-300 bg-amber-50">
+              <AlertDescription className="text-amber-800">
+                Warning: Unable to connect to the database. Contact form may not work properly.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <motion.form 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -179,7 +210,7 @@ const ContactSection = () => {
             <div className="text-center">
               <Button 
                 type="submit" 
-                disabled={isSubmitting}
+                disabled={isSubmitting || connectionStatus === false}
                 className="inline-flex items-center px-8 py-3 bg-portfolio-blue text-white font-semibold rounded-full hover:bg-portfolio-darkBlue transition duration-300 disabled:opacity-70"
               >
                 {isSubmitting ? (
