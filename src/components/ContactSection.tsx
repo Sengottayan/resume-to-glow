@@ -3,8 +3,15 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaPaperPlane } from 'react-icons/fa';
 import { addContactMessage } from '@/services/resumeService';
+import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const ContactSection = () => {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -25,14 +32,22 @@ const ContactSection = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitMessage(null);
     
     try {
+      console.log("Submitting form data:", formData);
       const messageId = await addContactMessage(formData);
       
       if (messageId) {
         setSubmitMessage({ 
           text: "Thank you for your message! I'll get back to you soon.", 
           isError: false 
+        });
+        
+        toast({
+          title: "Message sent",
+          description: "Your message has been sent successfully!",
+          duration: 5000,
         });
         
         // Reset form
@@ -47,17 +62,27 @@ const ContactSection = () => {
       }
     } catch (error) {
       console.error("Error submitting form:", error);
+      
       setSubmitMessage({
         text: "There was an error sending your message. Please try again later.",
         isError: true
+      });
+      
+      toast({
+        title: "Error",
+        description: "Failed to send your message. Please try again.",
+        variant: "destructive",
+        duration: 5000,
       });
     } finally {
       setIsSubmitting(false);
       
       // Clear message after 5 seconds
-      setTimeout(() => {
-        setSubmitMessage(null);
-      }, 5000);
+      if (submitMessage) {
+        setTimeout(() => {
+          setSubmitMessage(null);
+        }, 5000);
+      }
     }
   };
 
@@ -88,83 +113,71 @@ const ContactSection = () => {
             className="bg-white rounded-lg shadow-lg p-8"
           >
             {submitMessage && (
-              <div 
-                className={`mb-6 p-4 rounded-lg ${
-                  submitMessage.isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+              <Alert 
+                className={`mb-6 ${
+                  submitMessage.isError ? 'border-red-300 bg-red-50' : 'border-green-300 bg-green-50'
                 }`}
               >
-                {submitMessage.text}
-              </div>
+                <AlertDescription className={submitMessage.isError ? 'text-red-800' : 'text-green-800'}>
+                  {submitMessage.text}
+                </AlertDescription>
+              </Alert>
             )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label htmlFor="name" className="block text-gray-700 font-medium mb-2">
-                  Your Name
-                </label>
-                <input 
-                  type="text" 
+              <div className="space-y-2">
+                <Label htmlFor="name">Your Name</Label>
+                <Input 
                   id="name"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-portfolio-blue"
                   placeholder="John Doe"
                 />
               </div>
               
-              <div>
-                <label htmlFor="email" className="block text-gray-700 font-medium mb-2">
-                  Your Email
-                </label>
-                <input 
+              <div className="space-y-2">
+                <Label htmlFor="email">Your Email</Label>
+                <Input 
                   type="email" 
                   id="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-portfolio-blue"
                   placeholder="john@example.com"
                 />
               </div>
             </div>
             
-            <div className="mb-6">
-              <label htmlFor="subject" className="block text-gray-700 font-medium mb-2">
-                Subject
-              </label>
-              <input 
-                type="text" 
+            <div className="mb-6 space-y-2">
+              <Label htmlFor="subject">Subject</Label>
+              <Input 
                 id="subject"
                 name="subject"
                 value={formData.subject}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-portfolio-blue"
                 placeholder="Project Inquiry"
               />
             </div>
             
-            <div className="mb-6">
-              <label htmlFor="message" className="block text-gray-700 font-medium mb-2">
-                Your Message
-              </label>
-              <textarea 
+            <div className="mb-6 space-y-2">
+              <Label htmlFor="message">Your Message</Label>
+              <Textarea 
                 id="message"
                 name="message"
                 value={formData.message}
                 onChange={handleChange}
                 required
                 rows={5}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-portfolio-blue"
                 placeholder="Hello, I'd like to discuss a project..."
               />
             </div>
             
             <div className="text-center">
-              <button 
+              <Button 
                 type="submit" 
                 disabled={isSubmitting}
                 className="inline-flex items-center px-8 py-3 bg-portfolio-blue text-white font-semibold rounded-full hover:bg-portfolio-darkBlue transition duration-300 disabled:opacity-70"
@@ -183,7 +196,7 @@ const ContactSection = () => {
                     Send Message
                   </span>
                 )}
-              </button>
+              </Button>
             </div>
           </motion.form>
         </div>

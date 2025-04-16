@@ -1,4 +1,3 @@
-
 import { 
   collection, 
   getDocs, 
@@ -7,6 +6,7 @@ import {
   setDoc, 
   updateDoc, 
   addDoc,
+  serverTimestamp,
   DocumentData
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
@@ -216,13 +216,23 @@ export const addContactMessage = async (message: {
 }): Promise<string | null> => {
   try {
     const contactCollection = collection(db, "contactMessages");
-    const docRef = await addDoc(contactCollection, {
+    
+    // Add timestamp to the message data
+    const messageWithTimestamp = {
       ...message,
-      createdAt: new Date()
-    });
+      createdAt: serverTimestamp()
+    };
+    
+    // Add the document to Firestore
+    const docRef = await addDoc(contactCollection, messageWithTimestamp);
+    console.log("Message sent successfully with ID:", docRef.id);
     return docRef.id;
   } catch (error) {
     console.error("Error adding contact message:", error);
+    // Return more specific error information if possible
+    if (error instanceof Error) {
+      console.error("Error details:", error.message);
+    }
     return null;
   }
 };
