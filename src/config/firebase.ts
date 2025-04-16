@@ -25,6 +25,26 @@ const storage = getStorage(app);
 // Check if running in development mode to prevent unnecessary console logs in production
 if (import.meta.env.DEV) {
   console.log("Firebase initialized with project:", firebaseConfig.projectId);
+  
+  // Use Firebase emulator if needed
+  // Uncomment these lines to use emulators during development
+  // connectFirestoreEmulator(db, "localhost", 8080);
+  // connectStorageEmulator(storage, "localhost", 9199);
 }
 
-export { app, db, storage };
+// Test Firestore connection
+const testFirestoreConnection = async () => {
+  try {
+    // Simple ping to verify connection
+    const ping = await fetch(`https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents`, { 
+      method: 'OPTIONS',
+      mode: 'cors'
+    });
+    return ping.ok;
+  } catch (error) {
+    console.error("Firebase connection test failed:", error);
+    return false;
+  }
+};
+
+export { app, db, storage, testFirestoreConnection };

@@ -23,7 +23,7 @@ const Index = () => {
       <CertificatesSection />
       <ContactSection />
       <Footer />
-      <SonnerToaster position="top-right" closeButton />
+      <SonnerToaster position="top-right" closeButton richColors />
       <Toaster />
     </div>
   );

@@ -26,12 +26,32 @@ const ContactSection = () => {
   // Test Firebase connection on component mount
   useEffect(() => {
     const checkConnection = async () => {
-      const isConnected = await testFirestoreConnection();
-      setConnectionStatus(isConnected);
-      console.log("Firebase connection status:", isConnected ? "Connected" : "Not connected");
+      try {
+        // First check internet connectivity
+        const onlineStatus = navigator.onLine;
+        if (!onlineStatus) {
+          console.error("No internet connection detected");
+          setConnectionStatus(false);
+          return;
+        }
+        
+        // Then test Firebase connectivity
+        const isConnected = await testFirestoreConnection();
+        setConnectionStatus(isConnected);
+        console.log("Firebase connection status:", isConnected ? "Connected" : "Not connected");
+      } catch (error) {
+        console.error("Error checking connection:", error);
+        setConnectionStatus(false);
+      }
     };
     
     checkConnection();
+    
+    // Set up an interval to periodically check the connection
+    const intervalId = setInterval(checkConnection, 60000); // Check every minute
+    
+    // Clean up the interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -49,6 +69,16 @@ const ContactSection = () => {
     
     try {
       console.log("Submitting form data:", formData);
+      
+      // First check connectivity
+      if (!navigator.onLine) {
+        throw new Error("No internet connection. Please check your network and try again.");
+      }
+      
+      // Check Firebase connection
+      if (connectionStatus === false) {
+        throw new Error("Cannot connect to the database. Please try again later.");
+      }
       
       // Show a loading toast
       const loadingToast = toast.loading("Sending your message...");

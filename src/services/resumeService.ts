@@ -1,3 +1,4 @@
+
 import { 
   collection, 
   getDocs, 
@@ -8,9 +9,10 @@ import {
   addDoc,
   serverTimestamp,
   DocumentData,
-  Timestamp
+  Timestamp,
+  writeBatch
 } from "firebase/firestore";
-import { db } from "@/config/firebase";
+import { db, testFirestoreConnection } from "@/config/firebase";
 
 // Types for resume data
 export interface PersonalInfo {
@@ -219,6 +221,14 @@ export const getCocurricular = async (): Promise<CocurricularItem[]> => {
 // Function to add a contact message with enhanced error handling
 export const addContactMessage = async (message: ContactMessage): Promise<string | null> => {
   try {
+    // First verify connection
+    const isConnected = await testFirestoreConnection();
+    if (!isConnected) {
+      console.error("Firebase connection test failed before sending message");
+      throw new Error("Cannot connect to database");
+    }
+    
+    console.log("Firebase connection verified, proceeding to send message");
     console.log("Sending message data:", message);
     
     const contactCollection = collection(db, "contactMessages");
@@ -228,11 +238,25 @@ export const addContactMessage = async (message: ContactMessage): Promise<string
       createdAt: serverTimestamp()
     };
     
-    console.log("Adding document to Firestore...");
-    const docRef = await addDoc(contactCollection, messageWithTimestamp);
-    
-    console.log("Message sent successfully with ID:", docRef.id);
-    return docRef.id;
+    // Try to use batch write for better error handling
+    try {
+      const batch = writeBatch(db);
+      const newDocRef = doc(contactCollection);
+      batch.set(newDocRef, messageWithTimestamp);
+      
+      console.log("Committing batch write to Firestore...");
+      await batch.commit();
+      
+      console.log("Message sent successfully with ID:", newDocRef.id);
+      return newDocRef.id;
+    } catch (batchError) {
+      console.error("Batch write failed, trying regular addDoc:", batchError);
+      
+      // Fallback to regular addDoc
+      const docRef = await addDoc(contactCollection, messageWithTimestamp);
+      console.log("Message sent successfully with ID (fallback):", docRef.id);
+      return docRef.id;
+    }
   } catch (error) {
     console.error("Error adding contact message:");
     
@@ -247,15 +271,5 @@ export const addContactMessage = async (message: ContactMessage): Promise<string
   }
 };
 
-// Function to test Firestore connection
-export const testFirestoreConnection = async (): Promise<boolean> => {
-  try {
-    const testDocRef = doc(db, "test", "connection");
-    await getDoc(testDocRef);
-    console.log("Firestore connection successful");
-    return true;
-  } catch (error) {
-    console.error("Firestore connection test failed:", error);
-    return false;
-  }
-};
+// Export the Firebase connection test function
+export { testFirestoreConnection };
